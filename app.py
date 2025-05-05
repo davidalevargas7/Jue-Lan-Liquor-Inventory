@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://neondb_owner:npg_mO6IdNFki3Qo@ep-shrill-cake-a43ro4b9-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -35,10 +35,10 @@ def setup_db():
 # Home route
 @app.route('/')
 def index():
-    liquors = Liquor.query.all()
+    liquors = Liquor.query.order_by(Liquor.liquor_name).all()
     return render_template('index.html', liquors=liquors)
 
-# Add liquor route
+# Add liquor
 @app.route('/add', methods=['GET', 'POST'])
 def add_liquor():
     if request.method == 'POST':
@@ -54,6 +54,28 @@ def add_liquor():
         return redirect(url_for('index'))
     return render_template('add.html')
 
-# Run the app locally
+# Edit liquor
+@app.route('/edit/<int:liquor_id>', methods=['GET', 'POST'])
+def edit_liquor(liquor_id):
+    liquor = Liquor.query.get_or_404(liquor_id)
+    if request.method == 'POST':
+        liquor.liquor_name = request.form['liquor_name']
+        liquor.liquor_type = request.form['liquor_type']
+        liquor.bottle_size = request.form['bottle_size']
+        liquor.quantity = int(request.form['quantity'])
+        liquor.last_updated = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        db.session.commit()
+        return redirect(url_for('index'))
+    return render_template('edit.html', liquor=liquor)
+
+# Delete liquor
+@app.route('/delete/<int:liquor_id>')
+def delete_liquor(liquor_id):
+    liquor = Liquor.query.get_or_404(liquor_id)
+    db.session.delete(liquor)
+    db.session.commit()
+    return redirect(url_for('index'))
+
+# Run locally
 if __name__ == '__main__':
     app.run(debug=True)
