@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Liquor Inventory</title>
+</head>
+<body>
+    <h1>Liquor Room Inventory</h1>
+    <a href="{{ url_for('add_liquor') }}">Add New Liquor</a>
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Size</th>
+            <th>Quantity</th>
+            <th>Last Updated</th>
+        </tr>
+        {% for liquor in liquors %}
+        <tr>
+            <td>{{ liquor.liquor_name }}</td>
+            <td>{{ liquor.liquor_type }}</td>
+            <td>{{ liquor.bottle_size }}</td>
+            <td>{{ liquor.quantity }}</td>
+            <td>{{ liquor.last_updated }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

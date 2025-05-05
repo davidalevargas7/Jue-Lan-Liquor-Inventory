@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Liquor</title>
+</head>
+<body>
+    <h1>Add New Liquor</h1>
+    <form method="POST">
+        <label>Name:</label><br>
+        <input type="text" name="liquor_name"><br><br>
+
+        <label>Type:</label><br>
+        <input type="text" name="liquor_type"><br><br>
+
+        <label>Size:</label><br>
+        <input type="text" name="bottle_size"><br><br>
+
+        <label>Quantity:</label><br>
+        <input type="number" name="quantity"><br><br>
+
+        <button type="submit">Add</button>
+    </form>
+    <br>
+    <a href="{{ url_for('index') }}">Back to Inventory</a>
+</body>
+</html>
