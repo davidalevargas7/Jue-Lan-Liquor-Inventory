@@ -1,19 +1,32 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import os
 import datetime
 from dotenv import load_dotenv
 
-# Load .env values (for Supabase connection)
+# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://neondb_owner:npg_mO6IdNFki3Qo@ep-shrill-cake-a43ro4b9-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require"
+app.secret_key = os.getenv("SECRET_KEY")
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "supersecret")
 
 db = SQLAlchemy(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 
-# Define liquor model
+# Models
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(150), unique=True, nullable=False)
+    password = db.Column(db.String(150), nullable=False)
+
 class Liquor(db.Model):
     __tablename__ = 'liquor'
     id = db.Column(db.Integer, primary_key=True)
@@ -23,17 +36,38 @@ class Liquor(db.Model):
     quantity = db.Column(db.Integer, nullable=False)
     last_updated = db.Column(db.String(100), nullable=False)
 
-# TEMPORARY route to create tables
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username, password=password).first()
+        if user:
+            login_user(user)
+            return redirect(url_for('index'))
+        flash('Invalid credentials', 'danger')
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
 @app.route('/setup-db')
 def setup_db():
     try:
         db.create_all()
-        return "✅ Tables created in Supabase!"
+        return "✅ Tables created!"
     except Exception as e:
         return f"❌ Error: {str(e)}"
 
-# Home route with search & sort
 @app.route('/')
+@login_required
 def index():
     search_query = request.args.get('search', '').strip()
     sort_by = request.args.get('sort_by', 'name')
@@ -48,15 +82,14 @@ def index():
         query = query.order_by(Liquor.quantity.asc() if order == 'asc' else Liquor.quantity.desc())
     elif sort_by == 'type':
         query = query.order_by(Liquor.liquor_type.asc() if order == 'asc' else Liquor.liquor_type.desc())
-    else:  # Default sort by name
+    else:
         query = query.order_by(Liquor.liquor_name.asc() if order == 'asc' else Liquor.liquor_name.desc())
 
     liquors = query.all()
-
     return render_template('index.html', liquors=liquors, search_query=search_query, sort_by=sort_by, order=order)
 
-# Add liquor
 @app.route('/add', methods=['GET', 'POST'])
+@login_required
 def add_liquor():
     if request.method == 'POST':
         liquor = Liquor(
@@ -71,8 +104,8 @@ def add_liquor():
         return redirect(url_for('index'))
     return render_template('add.html')
 
-# Edit liquor
 @app.route('/edit/<int:liquor_id>', methods=['GET', 'POST'])
+@login_required
 def edit_liquor(liquor_id):
     liquor = Liquor.query.get_or_404(liquor_id)
     if request.method == 'POST':
@@ -85,14 +118,13 @@ def edit_liquor(liquor_id):
         return redirect(url_for('index'))
     return render_template('edit.html', liquor=liquor)
 
-# Delete liquor
 @app.route('/delete/<int:liquor_id>', methods=['POST'])
+@login_required
 def delete_liquor(liquor_id):
     liquor = Liquor.query.get_or_404(liquor_id)
     db.session.delete(liquor)
     db.session.commit()
     return redirect(url_for('index'))
 
-# Run locally
 if __name__ == '__main__':
     app.run(debug=True)
