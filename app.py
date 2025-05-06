@@ -44,6 +44,7 @@ class Liquor(db.Model):
     bottle_size = db.Column(db.String(20), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     last_updated = db.Column(db.String(100), nullable=False)
+    edited_by = db.Column(db.String(150))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -114,7 +115,8 @@ def add_liquor():
             liquor_type=request.form['liquor_type'],
             bottle_size=request.form['bottle_size'],
             quantity=int(request.form['quantity']),
-            last_updated=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            last_updated=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            edited_by=current_user.username
         )
         db.session.add(liquor)
         db.session.commit()
