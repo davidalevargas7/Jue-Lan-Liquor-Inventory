@@ -55,24 +55,22 @@
 </nav>
 
 <div class="container mt-4">
-    <form method="get" class="row g-2 justify-content-center align-items-center">
+    <form class="row g-3 align-items-center" method="GET" action="/">
         <div class="col-md-4">
-            <input type="text" name="search" class="form-control" placeholder="Search by name" value="{{ search_query }}">
+            <input type="text" class="form-control" name="search" placeholder="Search by liquor name..." value="{{ request.args.get('search', '') }}">
         </div>
         <div class="col-md-3">
-            <select name="sort" class="form-select">
-                <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>Name (A–Z)</option>
-                <option value="name_desc" {% if sort_by == 'name_desc' %}selected{% endif %}>Name (Z–A)</option>
-                <option value="type" {% if sort_by == 'type' %}selected{% endif %}>Type</option>
-                <option value="quantity_asc" {% if sort_by == 'quantity_asc' %}selected{% endif %}>Quantity (Low–High)</option>
-                <option value="quantity_desc" {% if sort_by == 'quantity_desc' %}selected{% endif %}>Quantity (High–Low)</option>
+            <select class="form-select" name="sort">
+                <option value="">Sort by...</option>
+                <option value="name_asc" {% if request.args.get('sort') == 'name_asc' %}selected{% endif %}>Name A-Z</option>
+                <option value="name_desc" {% if request.args.get('sort') == 'name_desc' %}selected{% endif %}>Name Z-A</option>
+                <option value="quantity_asc" {% if request.args.get('sort') == 'quantity_asc' %}selected{% endif %}>Quantity Ascending</option>
+                <option value="quantity_desc" {% if request.args.get('sort') == 'quantity_desc' %}selected{% endif %}>Quantity Descending</option>
+                <option value="type" {% if request.args.get('sort') == 'type' %}selected{% endif %}>Type</option>
             </select>
         </div>
-        <div class="col-md-2 d-grid">
-            <button type="submit" class="btn btn-dark">Apply</button>
-        </div>
-        <div class="col-md-2 d-grid">
-            <a href="{{ url_for('index') }}" class="btn btn-secondary">Reset Filters</a>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-dark w-100">Apply</button>
         </div>
     </form>
 </div>
