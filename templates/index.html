@@ -5,10 +5,7 @@
     <title>Jue Lan Club Liquor Inventory</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Bootstrap CSS -->
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f5f5f5;
@@ -24,7 +21,6 @@
             color: black !important;
             vertical-align: middle;
         }
-
         .table-container {
             max-width: 95%;
             margin: 30px auto;
@@ -57,6 +53,29 @@
         <a href="{{ url_for('add_liquor') }}" class="btn btn-primary">Add New Liquor</a>
     </div>
 </nav>
+
+<div class="container mt-4">
+    <form method="get" class="row g-2 justify-content-center align-items-center">
+        <div class="col-md-4">
+            <input type="text" name="search" class="form-control" placeholder="Search by name" value="{{ search_query }}">
+        </div>
+        <div class="col-md-3">
+            <select name="sort" class="form-select">
+                <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>Name (A–Z)</option>
+                <option value="name_desc" {% if sort_by == 'name_desc' %}selected{% endif %}>Name (Z–A)</option>
+                <option value="type" {% if sort_by == 'type' %}selected{% endif %}>Type</option>
+                <option value="quantity_asc" {% if sort_by == 'quantity_asc' %}selected{% endif %}>Quantity (Low–High)</option>
+                <option value="quantity_desc" {% if sort_by == 'quantity_desc' %}selected{% endif %}>Quantity (High–Low)</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-grid">
+            <button type="submit" class="btn btn-dark">Apply</button>
+        </div>
+        <div class="col-md-2 d-grid">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Reset Filters</a>
+        </div>
+    </form>
+</div>
 
 <div class="table-container">
     <table class="table table-bordered table-striped text-center align-middle">
