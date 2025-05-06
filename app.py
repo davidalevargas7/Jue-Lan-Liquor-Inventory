@@ -35,7 +35,23 @@ def setup_db():
 # Home route
 @app.route('/')
 def index():
-    liquors = Liquor.query.order_by(Liquor.liquor_name).all()
+    search_query = request.args.get('search', '')
+    sort_by = request.args.get('sort_by', '')
+    order = request.args.get('order', 'asc')
+
+    liquors = Liquor.query
+
+    if search_query:
+        liquors = liquors.filter(Liquor.liquor_name.ilike(f"%{search_query}%"))
+
+    if sort_by == 'quantity':
+        liquors = liquors.order_by(Liquor.quantity.asc() if order == 'asc' else Liquor.quantity.desc())
+    elif sort_by == 'type':
+        liquors = liquors.order_by(Liquor.liquor_type.asc() if order == 'asc' else Liquor.liquor_type.desc())
+    elif sort_by == 'name':
+        liquors = liquors.order_by(Liquor.liquor_name.asc() if order == 'asc' else Liquor.liquor_name.desc())
+
+    liquors = liquors.all()
     return render_template('index.html', liquors=liquors)
 
 # Add liquor
