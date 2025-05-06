@@ -14,7 +14,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "supersecret")
 
-# Initialize extensions
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -27,14 +26,13 @@ login_manager.login_view = 'login'
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
-    password_hash = db.Column(db.String(300), nullable=False)  # Make sure it's 300, not 150
+    password_hash = db.Column(db.String(256), nullable=False)  # Increased length for security
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-
 
 class Liquor(db.Model):
     __tablename__ = 'liquor'
@@ -44,7 +42,7 @@ class Liquor(db.Model):
     bottle_size = db.Column(db.String(20), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     last_updated = db.Column(db.String(100), nullable=False)
-    edited_by = db.Column(db.String(150))
+    edited_by = db.Column(db.String(100), nullable=True)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -83,28 +81,24 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    try:
-        search_query = request.args.get('search', '').strip()
-        sort_by = request.args.get('sort_by', 'name')
-        order = request.args.get('order', 'asc')
+    search_query = request.args.get('search', '').strip()
+    sort_by = request.args.get('sort_by', 'name')
+    order = request.args.get('order', 'asc')
 
-        query = Liquor.query
+    query = Liquor.query
 
-        if search_query:
-            query = query.filter(Liquor.liquor_name.ilike(f"%{search_query}%"))
+    if search_query:
+        query = query.filter(Liquor.liquor_name.ilike(f"%{search_query}%"))
 
-        if sort_by == 'quantity':
-            query = query.order_by(Liquor.quantity.asc() if order == 'asc' else Liquor.quantity.desc())
-        elif sort_by == 'type':
-            query = query.order_by(Liquor.liquor_type.asc() if order == 'asc' else Liquor.liquor_type.desc())
-        else:
-            query = query.order_by(Liquor.liquor_name.asc() if order == 'asc' else Liquor.liquor_name.desc())
+    if sort_by == 'quantity':
+        query = query.order_by(Liquor.quantity.asc() if order == 'asc' else Liquor.quantity.desc())
+    elif sort_by == 'type':
+        query = query.order_by(Liquor.liquor_type.asc() if order == 'asc' else Liquor.liquor_type.desc())
+    else:
+        query = query.order_by(Liquor.liquor_name.asc() if order == 'asc' else Liquor.liquor_name.desc())
 
-        liquors = query.all()
-        return render_template('index.html', liquors=liquors, search_query=search_query, sort_by=sort_by, order=order)
-    except Exception as e:
-        return f"❌ Error in index route: {e}"
-
+    liquors = query.all()
+    return render_template('index.html', liquors=liquors, search_query=search_query, sort_by=sort_by, order=order)
 
 @app.route('/add', methods=['GET', 'POST'])
 @login_required
@@ -133,6 +127,7 @@ def edit_liquor(liquor_id):
         liquor.bottle_size = request.form['bottle_size']
         liquor.quantity = int(request.form['quantity'])
         liquor.last_updated = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        liquor.edited_by = current_user.username
         db.session.commit()
         return redirect(url_for('index'))
     return render_template('edit.html', liquor=liquor)
