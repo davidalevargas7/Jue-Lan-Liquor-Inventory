@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <title>Jue Lan Club Liquor Inventory</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <style>
         body {
             background-color: #f5f5f5;
@@ -44,7 +42,7 @@
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
-    <a class="navbar-brand d-flex align-items-center" href="/">
+    <a class="navbar-brand d-flex align-items-center" href="#">
         <img src="{{ url_for('static', filename='jue_lan_club_logo.png') }}" alt="Jue Lan Club Logo" style="height: 40px;">
         <span class="fw-bold text-white">Jue Lan Club</span>
     </a>
@@ -56,29 +54,27 @@
     </div>
 </nav>
 
-<div class="container mt-4">
-    <form method="get" action="{{ url_for('index') }}">
-        <div class="row g-2 align-items-end">
-            <div class="col-md-4">
-                <input type="text" class="form-control" name="search" placeholder="Search by name..." value="{{ search_query }}">
-            </div>
-            <div class="col-md-3">
-                <select name="sort_by" class="form-select">
-                    <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Sort by Name</option>
-                    <option value="type" {% if sort_by == 'type' %}selected{% endif %}>Sort by Type</option>
-                    <option value="quantity" {% if sort_by == 'quantity' %}selected{% endif %}>Sort by Quantity</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select name="order" class="form-select">
-                    <option value="asc" {% if order == 'asc' %}selected{% endif %}>Ascending</option>
-                    <option value="desc" {% if order == 'desc' %}selected{% endif %}>Descending</option>
-                </select>
-            </div>
-            <div class="col-md-3 d-flex">
-                <button type="submit" class="btn btn-dark me-2 w-100">Apply</button>
-                <a href="{{ url_for('index') }}" class="btn btn-secondary w-100">Reset</a>
-            </div>
+<div class="container my-4">
+    <form method="GET" action="{{ url_for('index') }}" class="row g-2 align-items-center justify-content-center">
+        <div class="col-sm-auto">
+            <input type="text" name="search" class="form-control" placeholder="Search by name" value="{{ search_query }}">
+        </div>
+        <div class="col-sm-auto">
+            <select name="sort_by" class="form-select">
+                <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Sort by Name</option>
+                <option value="type" {% if sort_by == 'type' %}selected{% endif %}>Sort by Type</option>
+                <option value="quantity" {% if sort_by == 'quantity' %}selected{% endif %}>Sort by Quantity</option>
+            </select>
+        </div>
+        <div class="col-sm-auto">
+            <select name="order" class="form-select">
+                <option value="asc" {% if order == 'asc' %}selected{% endif %}>Ascending</option>
+                <option value="desc" {% if order == 'desc' %}selected{% endif %}>Descending</option>
+            </select>
+        </div>
+        <div class="col-sm-auto">
+            <button type="submit" class="btn btn-primary">Apply</button>
+            <a href="{{ url_for('index') }}" class="btn btn-danger">Reset</a>
         </div>
     </form>
 </div>
@@ -112,10 +108,6 @@
                         <button type="submit" class="btn btn-delete btn-sm">Delete</button>
                     </form>
                 </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="7" class="text-center text-muted">No liquors found.</td>
             </tr>
             {% endfor %}
         </tbody>
