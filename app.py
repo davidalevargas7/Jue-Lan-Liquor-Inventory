@@ -32,27 +32,28 @@ def setup_db():
     except Exception as e:
         return f"❌ Error: {str(e)}"
 
-# Home route
+# Home route with search & sort
 @app.route('/')
 def index():
-    search_query = request.args.get('search', '')
-    sort_by = request.args.get('sort_by', '')
+    search_query = request.args.get('search', '').strip()
+    sort_by = request.args.get('sort_by', 'name')
     order = request.args.get('order', 'asc')
 
-    liquors = Liquor.query
+    query = Liquor.query
 
     if search_query:
-        liquors = liquors.filter(Liquor.liquor_name.ilike(f"%{search_query}%"))
+        query = query.filter(Liquor.liquor_name.ilike(f"%{search_query}%"))
 
     if sort_by == 'quantity':
-        liquors = liquors.order_by(Liquor.quantity.asc() if order == 'asc' else Liquor.quantity.desc())
+        query = query.order_by(Liquor.quantity.asc() if order == 'asc' else Liquor.quantity.desc())
     elif sort_by == 'type':
-        liquors = liquors.order_by(Liquor.liquor_type.asc() if order == 'asc' else Liquor.liquor_type.desc())
-    elif sort_by == 'name':
-        liquors = liquors.order_by(Liquor.liquor_name.asc() if order == 'asc' else Liquor.liquor_name.desc())
+        query = query.order_by(Liquor.liquor_type.asc() if order == 'asc' else Liquor.liquor_type.desc())
+    else:  # Default sort by name
+        query = query.order_by(Liquor.liquor_name.asc() if order == 'asc' else Liquor.liquor_name.desc())
 
-    liquors = liquors.all()
-    return render_template('index.html', liquors=liquors)
+    liquors = query.all()
+
+    return render_template('index.html', liquors=liquors, search_query=search_query, sort_by=sort_by, order=order)
 
 # Add liquor
 @app.route('/add', methods=['GET', 'POST'])
@@ -85,7 +86,7 @@ def edit_liquor(liquor_id):
     return render_template('edit.html', liquor=liquor)
 
 # Delete liquor
-@app.route('/delete/<int:liquor_id>')
+@app.route('/delete/<int:liquor_id>', methods=['POST'])
 def delete_liquor(liquor_id):
     liquor = Liquor.query.get_or_404(liquor_id)
     db.session.delete(liquor)
