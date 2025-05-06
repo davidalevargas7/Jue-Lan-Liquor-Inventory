@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import datetime
 from dotenv import load_dotenv
@@ -9,23 +10,31 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.getenv("SECRET_KEY")
-
-app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "supersecret")
 
+# Initialize extensions
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+# ========================
 # Models
+# ========================
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(150), nullable=False)
+    password_hash = db.Column(db.String(300), nullable=False)  # Make sure it's 300, not 150
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
 
 class Liquor(db.Model):
     __tablename__ = 'liquor'
@@ -40,13 +49,25 @@ class Liquor(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# ========================
+# Routes
+# ========================
+
+@app.route('/setup-db')
+def setup_db():
+    try:
+        db.create_all()
+        return "✅ Tables created!"
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        user = User.query.filter_by(username=username, password=password).first()
-        if user:
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
             login_user(user)
             return redirect(url_for('index'))
         flash('Invalid credentials', 'danger')
@@ -58,35 +79,31 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-@app.route('/setup-db')
-def setup_db():
-    try:
-        db.create_all()
-        return "✅ Tables created!"
-    except Exception as e:
-        return f"❌ Error: {str(e)}"
-
 @app.route('/')
 @login_required
 def index():
-    search_query = request.args.get('search', '').strip()
-    sort_by = request.args.get('sort_by', 'name')
-    order = request.args.get('order', 'asc')
+    try:
+        search_query = request.args.get('search', '').strip()
+        sort_by = request.args.get('sort_by', 'name')
+        order = request.args.get('order', 'asc')
 
-    query = Liquor.query
+        query = Liquor.query
 
-    if search_query:
-        query = query.filter(Liquor.liquor_name.ilike(f"%{search_query}%"))
+        if search_query:
+            query = query.filter(Liquor.liquor_name.ilike(f"%{search_query}%"))
 
-    if sort_by == 'quantity':
-        query = query.order_by(Liquor.quantity.asc() if order == 'asc' else Liquor.quantity.desc())
-    elif sort_by == 'type':
-        query = query.order_by(Liquor.liquor_type.asc() if order == 'asc' else Liquor.liquor_type.desc())
-    else:
-        query = query.order_by(Liquor.liquor_name.asc() if order == 'asc' else Liquor.liquor_name.desc())
+        if sort_by == 'quantity':
+            query = query.order_by(Liquor.quantity.asc() if order == 'asc' else Liquor.quantity.desc())
+        elif sort_by == 'type':
+            query = query.order_by(Liquor.liquor_type.asc() if order == 'asc' else Liquor.liquor_type.desc())
+        else:
+            query = query.order_by(Liquor.liquor_name.asc() if order == 'asc' else Liquor.liquor_name.desc())
 
-    liquors = query.all()
-    return render_template('index.html', liquors=liquors, search_query=search_query, sort_by=sort_by, order=order)
+        liquors = query.all()
+        return render_template('index.html', liquors=liquors, search_query=search_query, sort_by=sort_by, order=order)
+    except Exception as e:
+        return f"❌ Error in index route: {e}"
+
 
 @app.route('/add', methods=['GET', 'POST'])
 @login_required
