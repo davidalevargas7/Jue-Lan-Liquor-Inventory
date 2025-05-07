@@ -3,35 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <title>Add Liquor</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
 </head>
-<body>
-    <div class="container mt-5">
-        <h2 class="mb-4 text-center">Add New Liquor</h2>
-        {% if current_user.role == 'editor' %}
-        <form method="POST" action="/add">
-            <div class="mb-3">
-                <label for="liquor_name" class="form-label">Liquor Name</label>
-                <input type="text" class="form-control" id="liquor_name" name="liquor_name" required>
-            </div>
-            <div class="mb-3">
-                <label for="liquor_type" class="form-label">Liquor Type</label>
-                <input type="text" class="form-control" id="liquor_type" name="liquor_type" required>
-            </div>
-            <div class="mb-3">
-                <label for="bottle_size" class="form-label">Bottle Size</label>
-                <input type="text" class="form-control" id="bottle_size" name="bottle_size" required>
-            </div>
-            <div class="mb-3">
-                <label for="quantity" class="form-label">Quantity</label>
-                <input type="number" class="form-control" id="quantity" name="quantity" min="0" required>
-            </div>
-            <button type="submit" class="btn btn-success">Add Liquor</button>
-            <a href="/" class="btn btn-secondary ms-2">Cancel</a>
-        </form>
-        {% else %}
-        <div class="alert alert-danger text-center">You do not have permission to add liquor.</div>
-        {% endif %}
-    </div>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark px-4">
+    <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+        <img src="{{ url_for('static', filename='jue_lan_club_logo.png') }}" alt="Logo" style="height: 40px;">
+        <span class="fw-bold text-white ms-2">Jue Lan Club</span>
+    </a>
+</nav>
+
+<div class="container mt-5">
+    <h2 class="mb-4">Add New Liquor</h2>
+    <form method="POST" action="{{ url_for('add_liquor') }}">
+        <div class="mb-3">
+            <label for="liquor_name" class="form-label">Liquor Name</label>
+            <input type="text" class="form-control" id="liquor_name" name="liquor_name" required>
+        </div>
+        <div class="mb-3">
+            <label for="liquor_type" class="form-label">Liquor Type</label>
+            <input type="text" class="form-control" id="liquor_type" name="liquor_type" required>
+        </div>
+        <div class="mb-3">
+            <label for="bottle_size" class="form-label">Bottle Size</label>
+            <input type="text" class="form-control" id="bottle_size" name="bottle_size" required>
+        </div>
+        <div class="mb-3">
+            <label for="quantity" class="form-label">Quantity</label>
+            <input type="number" class="form-control" id="quantity" name="quantity" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Liquor</button>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary ms-2">Cancel</a>
+    </form>
+</div>
+
 </body>
 </html>
