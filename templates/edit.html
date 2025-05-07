@@ -8,6 +8,7 @@
 <body>
     <div class="container mt-5">
         <h2 class="mb-4 text-center">Edit Liquor</h2>
+        {% if current_user.role == 'editor' %}
         <form method="POST">
             <div class="mb-3">
                 <label for="liquor_name" class="form-label">Liquor Name</label>
@@ -28,7 +29,9 @@
             <button type="submit" class="btn btn-primary">Update</button>
             <a href="/" class="btn btn-secondary ms-2">Cancel</a>
         </form>
+        {% else %}
+        <div class="alert alert-danger text-center">You do not have permission to edit liquor.</div>
+        {% endif %}
     </div>
 </body>
 </html>
-

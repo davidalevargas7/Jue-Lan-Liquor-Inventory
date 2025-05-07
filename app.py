@@ -26,7 +26,8 @@ login_manager.login_view = 'login'
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)  # Increased length for security
+    password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='viewer')  # 'viewer' or 'editor'
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -42,7 +43,7 @@ class Liquor(db.Model):
     bottle_size = db.Column(db.String(20), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     last_updated = db.Column(db.String(100), nullable=False)
-    edited_by = db.Column(db.String(100), nullable=True)
+    edited_by = db.Column(db.String(150), nullable=True)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -103,6 +104,10 @@ def index():
 @app.route('/add', methods=['GET', 'POST'])
 @login_required
 def add_liquor():
+    if current_user.role != 'editor':
+        flash("Unauthorized access", "danger")
+        return redirect(url_for('index'))
+
     if request.method == 'POST':
         liquor = Liquor(
             liquor_name=request.form['liquor_name'],
@@ -120,6 +125,10 @@ def add_liquor():
 @app.route('/edit/<int:liquor_id>', methods=['GET', 'POST'])
 @login_required
 def edit_liquor(liquor_id):
+    if current_user.role != 'editor':
+        flash("Unauthorized access", "danger")
+        return redirect(url_for('index'))
+
     liquor = Liquor.query.get_or_404(liquor_id)
     if request.method == 'POST':
         liquor.liquor_name = request.form['liquor_name']
@@ -135,6 +144,10 @@ def edit_liquor(liquor_id):
 @app.route('/delete/<int:liquor_id>', methods=['POST'])
 @login_required
 def delete_liquor(liquor_id):
+    if current_user.role != 'editor':
+        flash("Unauthorized access", "danger")
+        return redirect(url_for('index'))
+
     liquor = Liquor.query.get_or_404(liquor_id)
     db.session.delete(liquor)
     db.session.commit()
