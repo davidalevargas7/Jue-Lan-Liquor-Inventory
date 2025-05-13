@@ -70,7 +70,7 @@ def login():
         if user and user.check_password(password):
             login_user(user)
             return redirect(url_for('index'))
-        flash('Invalid credentials', 'danger')
+        flash('Invalid username or password', 'danger')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -82,24 +82,8 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    search_query = request.args.get('search', '').strip()
-    sort_by = request.args.get('sort_by', 'name')
-    order = request.args.get('order', 'asc')
-
-    query = Liquor.query
-
-    if search_query:
-        query = query.filter(Liquor.liquor_name.ilike(f"%{search_query}%"))
-
-    if sort_by == 'quantity':
-        query = query.order_by(Liquor.quantity.asc() if order == 'asc' else Liquor.quantity.desc())
-    elif sort_by == 'type':
-        query = query.order_by(Liquor.liquor_type.asc() if order == 'asc' else Liquor.liquor_type.desc())
-    else:
-        query = query.order_by(Liquor.liquor_name.asc() if order == 'asc' else Liquor.liquor_name.desc())
-
-    liquors = query.all()
-    return render_template('index.html', liquors=liquors, search_query=search_query, sort_by=sort_by, order=order)
+    liquors = Liquor.query.all()
+    return render_template('index.html', liquors=liquors)
 
 @app.route('/add', methods=['GET', 'POST'])
 @login_required
