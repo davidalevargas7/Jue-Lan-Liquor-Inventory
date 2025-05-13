@@ -2,11 +2,12 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import or_
 import os
 import datetime
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load .env variables
 load_dotenv()
 
 app = Flask(__name__)
@@ -45,6 +46,13 @@ class Liquor(db.Model):
     last_updated = db.Column(db.String(100), nullable=False)
     edited_by = db.Column(db.String(150), nullable=True)
 
+class ActivityLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(150))
+    action = db.Column(db.String(50))
+    liquor_name = db.Column(db.String(100))
+    timestamp = db.Column(db.String(100))
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -70,7 +78,7 @@ def login():
         if user and user.check_password(password):
             login_user(user)
             return redirect(url_for('index'))
-        flash('Invalid username or password', 'danger')
+        flash('Invalid credentials', 'danger')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -82,8 +90,29 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    liquors = Liquor.query.all()
-    return render_template('index.html', liquors=liquors)
+    search_query = request.args.get('search', '').strip()
+    sort_by = request.args.get('sort_by', 'name')
+    order = request.args.get('order', 'asc')
+
+    query = Liquor.query
+
+    if search_query:
+        query = query.filter(or_(
+            Liquor.liquor_name.ilike(f"%{search_query}%"),
+            Liquor.liquor_type.ilike(f"%{search_query}%"),
+            Liquor.bottle_size.ilike(f"%{search_query}%"),
+            Liquor.edited_by.ilike(f"%{search_query}%")
+        ))
+
+    if sort_by == 'quantity':
+        query = query.order_by(Liquor.quantity.asc() if order == 'asc' else Liquor.quantity.desc())
+    elif sort_by == 'type':
+        query = query.order_by(Liquor.liquor_type.asc() if order == 'asc' else Liquor.liquor_type.desc())
+    else:
+        query = query.order_by(Liquor.liquor_name.asc() if order == 'asc' else Liquor.liquor_name.desc())
+
+    liquors = query.all()
+    return render_template('index.html', liquors=liquors, search_query=search_query, sort_by=sort_by, order=order)
 
 @app.route('/add', methods=['GET', 'POST'])
 @login_required
@@ -102,6 +131,15 @@ def add_liquor():
             edited_by=current_user.username
         )
         db.session.add(liquor)
+
+        # Log this action
+        log = ActivityLog(
+            username=current_user.username,
+            action='add',
+            liquor_name=liquor.liquor_name,
+            timestamp=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        )
+        db.session.add(log)
         db.session.commit()
         return redirect(url_for('index'))
     return render_template('add.html')
@@ -121,6 +159,15 @@ def edit_liquor(liquor_id):
         liquor.quantity = int(request.form['quantity'])
         liquor.last_updated = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         liquor.edited_by = current_user.username
+
+        # Log this action
+        log = ActivityLog(
+            username=current_user.username,
+            action='edit',
+            liquor_name=liquor.liquor_name,
+            timestamp=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        )
+        db.session.add(log)
         db.session.commit()
         return redirect(url_for('index'))
     return render_template('edit.html', liquor=liquor)
@@ -133,9 +180,28 @@ def delete_liquor(liquor_id):
         return redirect(url_for('index'))
 
     liquor = Liquor.query.get_or_404(liquor_id)
+
+    # Log before deleting
+    log = ActivityLog(
+        username=current_user.username,
+        action='delete',
+        liquor_name=liquor.liquor_name,
+        timestamp=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    )
+    db.session.add(log)
+
     db.session.delete(liquor)
     db.session.commit()
     return redirect(url_for('index'))
+
+@app.route('/logs')
+@login_required
+def view_logs():
+    if current_user.role != 'editor':
+        flash("Access denied: Only editors can view logs.", "danger")
+        return redirect(url_for('index'))
+    logs = ActivityLog.query.order_by(ActivityLog.id.desc()).all()
+    return render_template('logs.html', logs=logs)
 
 if __name__ == '__main__':
     app.run(debug=True)
